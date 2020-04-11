@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Perob Order Form Plugin
-Plugin URI:  https://perob.com/
+Plugin URI:  https://perob.vn/
 Description: Perob order form is plugin of wordpress. It's allow admin of wordpress site add Order Form will make sure all client info will pass to Perob CRM
 Version:     1.0
 Author:      Trang Nguyen
-Author URI:  http://trangnn.com
+Author URI:  https://trangnn.com
 Text Domain: perob
 License:     GPL2
 
