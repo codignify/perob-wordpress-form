@@ -1,0 +1,7 @@
+form.perobform p.message.error {
+    color: red;
+}
+
+form.perobform p.message.success {
+    color: #00a65a;
+}
