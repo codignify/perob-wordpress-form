@@ -49,8 +49,8 @@ if (!class_exists('PerobOrderFormPlugin')) {
                 'description' => 'If you use shortcode [perob_form] without attribute product_code, this config will used by default.'
             ],
             'utm' => [
-                'title' => 'Marketing UTM Link',
-                'description' => 'This link will be used to detect marketing campain on CRM for all potential customer come from this site'
+                'title' => 'Default UTM Link',
+                'description' => 'This link will be used as default utml_link to detect marketing campain on CRM for all potential customer come from this site'
             ],
             'source' => [
                 'title' => 'Marketing Source',
@@ -158,6 +158,19 @@ if (!class_exists('PerobOrderFormPlugin')) {
         {
             $config = get_option(self::PEROB_SETTING_DBKEY);
 
+            $utm_data = [];
+            foreach ($_POST as $key => $value) {
+                if (strstr($key, 'utm_') !== false) {
+                    $utm_data[$key] = $value;
+                }
+            }
+
+            if (!empty($utm_data)) {
+                $utm_link = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/?' . http_build_query($utm_data);
+            } else {
+                $utm_link = $config['utm'];
+            }
+
             $post_data = [
                 'name' => $data['name'],
                 'phone_number' => $data['phonenumber'],
@@ -168,7 +181,7 @@ if (!class_exists('PerobOrderFormPlugin')) {
                         'quantity' => $data['quantity']
                     ]
                 ],
-                'utm_link' => $config['utm'],
+                'utm_link' => $utm_link,
                 'source' => $config['source']
             ];
 
@@ -317,7 +330,7 @@ if (!class_exists('PerobOrderFormPlugin')) {
         public static function admin_menu()
         {
             // add top level menu page
-            add_menu_page(
+            add_options_page(
                 'Perob Options',
                 'Perob Options',
                 'manage_options',
