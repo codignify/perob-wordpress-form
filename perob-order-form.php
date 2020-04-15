@@ -221,29 +221,33 @@ if (!class_exists('PerobOrderFormPlugin')) {
                 echo $content;
             } else {
                 ?>
-                <form class="<?php echo self::PEROB_SHORTCODE; ?>" action="<?php echo esc_url( admin_url('admin-post.php') ); ?>" method="post">
-                    <input type="hidden" name="action" value="<?php echo self::PEROB_SHORTCODE; ?>" />
-                    <input type="hidden" name="product_code" value="<?php echo esc_attr($atts['product_code']); ?>" />
-                    <?php wp_nonce_field(self::PEROB_NONCE_SALT); ?>
-                    <p>
-                        Name (required) <br/>
-                        <input type="text" name="name" value="" size="100" required />
-                    </p>
-                    <p>
-                        Phone (required) <br/>
-                        <input type="tel" name="phonenumber" pattern="[0-9\+]+" value="" size="40" required />
-                    </p>
-                    <p>
-                        Quantity (required) <br/>
-                        <input type="text" name="quantity" pattern="[0-9]+" value="" size="40" required />
-                    </p>
-                    <p>
-                        Content<br/>
-                        <textarea rows="10" name="message"></textarea>
-                    </p>
-                    <p class="message"></p>
-                    <p><input type="submit" value="Order"></p>
-                </form>
+                <div class="<?php echo self::PEROB_SHORTCODE?>-container">
+                    <form class="<?php echo self::PEROB_SHORTCODE; ?>" action="<?php echo esc_url( admin_url('admin-post.php') ); ?>" method="post">
+                        <input type="hidden" name="action" value="<?php echo self::PEROB_SHORTCODE; ?>" />
+                        <input type="hidden" name="product_code" value="<?php echo esc_attr($atts['product_code']); ?>" />
+                        <?php wp_nonce_field(self::PEROB_NONCE_SALT); ?>
+                        <div class="form-group">
+                            <label>Tên (<span class="required">*</span>)</label>
+                            <input type="text" class="form-control" name="name" value="" size="100" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Số điện thoại (<span class="required">*</span>)</label>
+                            <input type="tel" class="form-control" name="phonenumber" pattern="[0-9\+]+" value="" size="40" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Số lượng (<span class="required">*</span>)</label>
+                            <input type="text" class="form-control" name="quantity" pattern="[0-9]+" value="" size="40" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Nội dung</label>
+                            <textarea rows="3" class="form-control" name="content"></textarea>
+                        </div>
+                        <div class="message"></div>
+                        <div class="form-group">
+                            <button type="submit">Đặt hàng</button>
+                        </div>
+                    </form>
+                </div>
                 <?php
             }
             return ob_get_clean();
