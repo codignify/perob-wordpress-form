@@ -56,6 +56,20 @@ if (!class_exists('PerobOrderFormPlugin')) {
                 'title' => 'Marketing Source',
                 'description' => 'This source be set to all potential customer come from this site on CRM'
             ],
+            'use_recaptcha' => [
+                'type' => 'select',
+                'title' => 'Use reCaptcha',
+                'description' => 'Use <a href="https://developers.google.com/recaptcha/intro" target="_blank">Google reCaptcha</a> to protects you against spam and other types of automated abuse',
+                'options' => ['Yes', 'No']
+            ],
+            'recaptcha_site_key' => [
+                'title' => 'reCaptcha SITE KEY',
+                'description' => 'Google reCaptcha Site key'
+            ],
+            'recaptcha_secret' => [
+                'title' => 'reCaptcha SECRET',
+                'description' => 'Google reCaptcha Secret'
+            ],
             'submit_via' => [
                 'type' => 'select',
                 'title' => 'Submit Via',
@@ -125,6 +139,15 @@ if (!class_exists('PerobOrderFormPlugin')) {
             if (!wp_verify_nonce($_POST['_wpnonce'], self::PEROB_NONCE_SALT)) {
                 self::end_post_handle(false, 'You do not have permission!');
                 return;
+            }
+            $perob_options = get_option(self::PEROB_SETTING_DBKEY);
+            if ($perob_options['use_recaptcha'] && $perob_options['recaptcha_site_key'] && $perob_options['recaptcha_secret']) {
+                $verify_response = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . $perob_options['recaptcha_secret'] . '&response=' . $_POST['recaptcha']);
+                $response_data = json_decode($verify_response);
+                if(!$response_data->success || $response_data->action != self::PEROB_SHORTCODE) {
+                    self::end_post_handle(false, 'Robot verification failed, please try again. ' . json_encode($response_data));
+                    return;
+                }
             }
             if (!$_POST['name'] || !$_POST['phonenumber'] || !$_POST['quantity']) {
                 self::end_post_handle(false, 'Inputs are invalid');
@@ -222,6 +245,17 @@ if (!class_exists('PerobOrderFormPlugin')) {
             } else {
                 ?>
                 <div class="<?php echo self::PEROB_SHORTCODE?>-container">
+                    <?php if ($perob_options['use_recaptcha'] == 'Yes'): ?>
+                    <script src="https://www.google.com/recaptcha/api.js?render=<?php echo $perob_options['recaptcha_site_key']; ?>"></script>
+                    <script>
+                        grecaptcha.ready(function () {
+                            grecaptcha.execute('<?php echo $perob_options['recaptcha_site_key']; ?>', { action: '<?php echo self::PEROB_SHORTCODE; ?>' }).then(function (token) {
+                                var recaptchaResponse = document.getElementById('<?php echo self::PEROB_SHORTCODE; ?>-recaptcha');
+                                recaptchaResponse.value = token;
+                            });
+                        });
+                    </script>
+                    <?php endif; ?>
                     <form class="<?php echo self::PEROB_SHORTCODE; ?>" action="<?php echo esc_url( admin_url('admin-post.php') ); ?>" method="post">
                         <input type="hidden" name="action" value="<?php echo self::PEROB_SHORTCODE; ?>" />
                         <input type="hidden" name="product_code" value="<?php echo esc_attr($atts['product_code']); ?>" />
@@ -242,6 +276,9 @@ if (!class_exists('PerobOrderFormPlugin')) {
                             <label>Nội dung</label>
                             <textarea rows="3" class="form-control" name="content"></textarea>
                         </div>
+                        <?php if ($perob_options['use_recaptcha']): ?>
+                        <input type="hidden" id="<?php echo self::PEROB_SHORTCODE; ?>-recaptcha" name="recaptcha" value=""/ >
+                        <?php endif; ?>
                         <div class="message"></div>
                         <div class="form-group">
                             <button type="submit">Đặt hàng</button>
@@ -326,7 +363,7 @@ if (!class_exists('PerobOrderFormPlugin')) {
             </select>
             <?php endif; ?>
             <p class="description">
-                <?php esc_html_e($args['description'], self::PEROB_SETTING_PAGE_NAME);?>
+                <?php echo $args['description']; ?>
             </p>
             <?php
         }
@@ -356,7 +393,7 @@ if (!class_exists('PerobOrderFormPlugin')) {
             // wordpress will add the "settings-updated" $_GET parameter to the url
             if (isset($_GET['settings-updated'])) {
                 // add settings saved message with the class of "updated"
-                add_settings_error('perob_messages', 'perob_message', __('Settings Saved', self::PEROB_SETTING_PAGE_NAME), 'updated');
+                // add_settings_error('perob_messages', 'perob_message', __('Settings Saved', self::PEROB_SETTING_PAGE_NAME), 'updated');
             }
 
             // show error/update messages

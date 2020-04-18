@@ -7,11 +7,11 @@
     width: 100%;
 }
 
-form.perobform p.message.error {
+form.perobform .message.error {
     color: red;
 }
 
-form.perobform p.message.success {
+form.perobform .message.success {
     color: #00a65a;
 }
 

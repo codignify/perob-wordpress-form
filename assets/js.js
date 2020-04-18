@@ -36,7 +36,7 @@ jQuery(document).ready(function($) {
                 dataType: 'json',
                 success: function(response) {
                     var mesg_cls = response.success == true ? 'success' : 'error';
-                    $perobform.find('p.message').removeClass('success error').addClass(mesg_cls).html(response.message);
+                    $perobform.find('.message').removeClass('success error').addClass(mesg_cls).html(response.message);
                 }
             });
         });
