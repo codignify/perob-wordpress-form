@@ -20,9 +20,9 @@ jQuery(document).ready(function($) {
     };
     save_utm_data();
     if (perob_vars.use_ajax == 1) {
-        var $perobform = $(perob_vars.form);
-        $perobform.submit(function(e) {
+        $(perob_vars.form + ' .submit').click(function (e) {
             e.preventDefault();
+            var $perobform = $(this).closest(perob_vars.form);
             var data = $perobform.serialize();
             var utm_data = JSON.parse(localStorage.getItem('utm_data'));
             if (utm_data) {

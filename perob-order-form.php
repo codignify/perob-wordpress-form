@@ -83,6 +83,8 @@ if (!class_exists('PerobOrderFormPlugin')) {
         const PEROB_NONCE_SALT = 'perob!@#$';
         const PEROB_ASSETS_NAME = 'perob-assets';
 
+        public static $id = 1;
+
         public static function init()
         {
             /**
@@ -141,18 +143,29 @@ if (!class_exists('PerobOrderFormPlugin')) {
                 return;
             }
             $perob_options = get_option(self::PEROB_SETTING_DBKEY);
-            if ($perob_options['use_recaptcha'] && $perob_options['recaptcha_site_key'] && $perob_options['recaptcha_secret']) {
-                $verify_response = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . $perob_options['recaptcha_secret'] . '&response=' . $_POST['recaptcha']);
-                $response_data = json_decode($verify_response);
-                if(!$response_data->success || $response_data->action != self::PEROB_SHORTCODE) {
+            if (
+                $perob_options['use_recaptcha'] == 'Yes' &&
+                $perob_options['recaptcha_site_key'] && $perob_options['recaptcha_secret']
+            ) {
+                $response_data = self::get_data_from_api_by_curl_post(
+                    'https://www.google.com/recaptcha/api/siteverify',
+                    [
+                        'secret' => $perob_options['recaptcha_secret'],
+                        'response' => $_POST['recaptcha']
+                    ]
+                );
+
+                if(!$response_data['success'] || $response_data['action'] != self::PEROB_SHORTCODE) {
                     self::end_post_handle(false, 'Robot verification failed, please try again. ' . json_encode($response_data));
                     return;
                 }
             }
-            if (!$_POST['name'] || !$_POST['phonenumber'] || !$_POST['quantity']) {
+
+            if (!$_POST['name'] || !$_POST['phone']) {
                 self::end_post_handle(false, 'Inputs are invalid');
                 return;
             }
+
             if (!extension_loaded('curl')) {
                 self::end_post_handle(false, 'Server is not supported this function!');
                 return;
@@ -161,6 +174,22 @@ if (!class_exists('PerobOrderFormPlugin')) {
             $response = self::call_crm_api($_POST);
             self::end_post_handle($response['success'], $response['message']);
             return;
+        }
+
+        public static function get_data_from_api_by_curl_post($endpoint, $payload = [], $headers = [])
+        {
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, $endpoint);
+            curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($curl, CURLOPT_POST, 1);
+            curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
+
+            $response = curl_exec($curl);
+
+            $response = json_decode($response, true);
+
+            return $response;
         }
 
         public static function end_post_handle($status, $message)
@@ -194,34 +223,23 @@ if (!class_exists('PerobOrderFormPlugin')) {
                 $utm_link = $config['utm'];
             }
 
-            $post_data = [
-                'name' => $data['name'],
-                'phone_number' => $data['phonenumber'],
-                'content' => $data['content'],
-                'products' => [
-                    [
-                        'product_code' => $data['product_code'] ? $data['product_code'] : $config['default_product_code'],
-                        'quantity' => $data['quantity']
-                    ]
-                ],
-                'utm_link' => $utm_link,
-                'source' => $config['source']
-            ];
+            $post_data = $data;
+            unset($post_data['_wpnonce']);
+            unset($post_data['_wp_http_referer']);
+            unset($post_data['recaptcha']);
+            unset($post_data['action']);
+            $post_data['link'] = $utm_link;
+            $post_data['source'] = $config['source'];
 
-            $curl = curl_init();
-            curl_setopt($curl, CURLOPT_URL, $config['endpoint']);
-            curl_setopt($curl, CURLOPT_HTTPHEADER, [
-                'Authorization: Token ' . $config['token'],
-                'Content-Type: application/json'
-            ]);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($curl, CURLOPT_POST, 1);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data));
+            $response = self::get_data_from_api_by_curl_post(
+                $config['endpoint'],
+                json_encode($post_data),
+                [
+                    'Authorization: Token ' . $config['token'],
+                    'Content-Type: application/json'
+                ]
+            );
 
-            $httpCode = curl_getinfo($curl , CURLINFO_HTTP_CODE);
-            $response = curl_exec($curl);
-
-            $response = json_decode($response, true);
             $response['message'] = $response['error_message'];
             if ($response['success']) {
                 $response['message'] = 'Order is created succecced!';
@@ -236,29 +254,33 @@ if (!class_exists('PerobOrderFormPlugin')) {
 
             $atts = array_change_key_case((array)$atts, CASE_LOWER);
 
-            $atts = shortcode_atts([
+            $default_atts = shortcode_atts([
                  'product_code' => $perob_options['default_product_code'],
+                 'form_id' => 'default'
              ], $atts, $tag);
+
+            $all_atts = array_filter(array_merge($default_atts, $atts));
 
             if ($content) {
                 echo $content;
             } else {
                 ?>
                 <div class="<?php echo self::PEROB_SHORTCODE?>-container">
-                    <?php if ($perob_options['use_recaptcha'] == 'Yes'): ?>
+                    <?php if ($perob_options['use_recaptcha'] == 'Yes' && self::$id == 1): ?>
                     <script src="https://www.google.com/recaptcha/api.js?render=<?php echo $perob_options['recaptcha_site_key']; ?>"></script>
                     <script>
                         grecaptcha.ready(function () {
                             grecaptcha.execute('<?php echo $perob_options['recaptcha_site_key']; ?>', { action: '<?php echo self::PEROB_SHORTCODE; ?>' }).then(function (token) {
-                                var recaptchaResponse = document.getElementById('<?php echo self::PEROB_SHORTCODE; ?>-recaptcha');
-                                recaptchaResponse.value = token;
+                                document.querySelectorAll(".<?php echo self::PEROB_SHORTCODE; ?>-recaptcha").forEach(elem => (elem.value = token));
                             });
                         });
                     </script>
                     <?php endif; ?>
                     <form class="<?php echo self::PEROB_SHORTCODE; ?>" action="<?php echo esc_url( admin_url('admin-post.php') ); ?>" method="post">
                         <input type="hidden" name="action" value="<?php echo self::PEROB_SHORTCODE; ?>" />
-                        <input type="hidden" name="product_code" value="<?php echo esc_attr($atts['product_code']); ?>" />
+                        <?php foreach ($all_atts as $attr => $value) : ?>
+                        <input type="hidden" name="<?php echo $attr ?>" value="<?php echo esc_attr($value); ?>" />
+                        <?php endforeach; ?>
                         <?php wp_nonce_field(self::PEROB_NONCE_SALT); ?>
                         <div class="form-group">
                             <label>Tên (<span class="required">*</span>)</label>
@@ -266,27 +288,24 @@ if (!class_exists('PerobOrderFormPlugin')) {
                         </div>
                         <div class="form-group">
                             <label>Số điện thoại (<span class="required">*</span>)</label>
-                            <input type="tel" class="form-control" name="phonenumber" pattern="[0-9\+]+" value="" size="40" required />
-                        </div>
-                        <div class="form-group">
-                            <label>Số lượng (<span class="required">*</span>)</label>
-                            <input type="text" class="form-control" name="quantity" pattern="[0-9]+" value="" size="40" required />
+                            <input type="tel" class="form-control" name="phone" pattern="[0-9\+]+" value="" size="40" required />
                         </div>
                         <div class="form-group">
                             <label>Nội dung</label>
-                            <textarea rows="3" class="form-control" name="content"></textarea>
+                            <textarea rows="3" class="form-control" name="message"></textarea>
                         </div>
-                        <?php if ($perob_options['use_recaptcha']): ?>
-                        <input type="hidden" id="<?php echo self::PEROB_SHORTCODE; ?>-recaptcha" name="recaptcha" value=""/ >
+                        <?php if ($perob_options['use_recaptcha'] == 'Yes'): ?>
+                        <input type="hidden" class="<?php echo self::PEROB_SHORTCODE; ?>-recaptcha" name="recaptcha" value=""/ >
                         <?php endif; ?>
                         <div class="message"></div>
                         <div class="form-group">
-                            <button type="submit">Đặt hàng</button>
+                            <button type="submit" class="submit">Đặt hàng</button>
                         </div>
                     </form>
                 </div>
                 <?php
             }
+            self::$id += 1;
             return ob_get_clean();
         }
 
