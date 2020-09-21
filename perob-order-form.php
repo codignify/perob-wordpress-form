@@ -255,8 +255,7 @@ if (!class_exists('PerobOrderFormPlugin')) {
             $atts = array_change_key_case((array)$atts, CASE_LOWER);
 
             $default_atts = shortcode_atts([
-                 'product_code' => $perob_options['default_product_code'],
-                 'form_id' => 'default'
+                 'product_code' => $perob_options['default_product_code']
              ], $atts, $tag);
 
             $all_atts = array_filter(array_merge($default_atts, $atts));
