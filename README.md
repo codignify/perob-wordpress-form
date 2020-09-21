@@ -41,3 +41,4 @@
 - Thêm tag `[perobform]` vào nội dung bài viết (nơi muốn xuất hiện order form). Form sẽ nhận 4 trường là `Tên`, `Số điện thoại`, `Số lượng sản phẩm`, `Nội dung`. Khi người dùng điền vào submit form. Thông tin sẽ tự động được gửi đến CRM thông qua API (được cấu hình trong admin)
 - Tag `[perobform]` sẽ generate form với product_code là default trong config admin.
 - Sử dụng `[perobform product_code='code']` Nếu muốn gen form với product_code là code
+- Sử dụng `[perobform product_code='code' form_id="top"]` Nếu muốn gen form với product_code là `code` và form_id là `top`
