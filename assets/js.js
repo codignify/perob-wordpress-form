@@ -9,7 +9,7 @@ jQuery(document).ready(function($) {
         for (i = 0; i < sURLVariables.length; i++) {
             sParameterName = sURLVariables[i].split('=');
 
-            if (sParameterName[0].startsWith('utm_')) {
+            if (sParameterName[0].startsWith('utm_') || sParameterName[0] == 'fid') {
                 utm_data[sParameterName[0]] = sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
             }
         }

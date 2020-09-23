@@ -212,7 +212,7 @@ if (!class_exists('PerobOrderFormPlugin')) {
 
             $utm_data = [];
             foreach ($_POST as $key => $value) {
-                if (strstr($key, 'utm_') !== false) {
+                if (strstr($key, 'utm_') !== false || $key == 'fid') {
                     $utm_data[$key] = $value;
                 }
             }
