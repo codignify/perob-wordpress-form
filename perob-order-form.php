@@ -75,6 +75,10 @@ if (!class_exists('PerobOrderFormPlugin')) {
                 'title' => 'Submit Via',
                 'description' => 'Form will use form submit or ajax request to post data.',
                 'options' => ['ajax', 'form']
+            ],
+            'redirect_to' => [
+                'title' => 'Redirect To',
+                'description' => 'Address that client will be redirected to after form post success'
             ]
         ];
 
@@ -172,7 +176,7 @@ if (!class_exists('PerobOrderFormPlugin')) {
             }
 
             $response = self::call_crm_api($_POST);
-            self::end_post_handle($response['success'], $response['message']);
+            self::end_post_handle($response['success'], $response['message'], $perob_options['redirect_to']);
             return;
         }
 
@@ -192,17 +196,19 @@ if (!class_exists('PerobOrderFormPlugin')) {
             return $response;
         }
 
-        public static function end_post_handle($status, $message)
+        public static function end_post_handle($status, $message, $redirect_to = '')
         {
             $data = [
                 'success' => $status,
-                'message' => $message
+                'message' => $message,
+                'redirect_to' => $redirect_to
             ];
 
             if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                 wp_die(json_encode($data));
             } else {
-                wp_redirect($_POST['_wp_http_referer']);
+                $url = $status && $redirect_to ? $redirect_to : $_POST['_wp_http_referer'];
+                wp_redirect($url);
             }
         }
 

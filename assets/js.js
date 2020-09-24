@@ -35,8 +35,12 @@ jQuery(document).ready(function($) {
                 method: 'post',
                 dataType: 'json',
                 success: function(response) {
-                    var mesg_cls = response.success == true ? 'success' : 'error';
-                    $perobform.find('.message').removeClass('success error').addClass(mesg_cls).html(response.message);
+                    if (response.redirect_to) {
+                        window.location.href = response.redirect_to;
+                    } else {
+                        var mesg_cls = response.success == true ? 'success' : 'error';
+                        $perobform.find('.message').removeClass('success error').addClass(mesg_cls).html(response.message);
+                    }
                 }
             });
         });
